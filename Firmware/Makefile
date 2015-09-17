@@ -72,7 +72,7 @@ TARGETS		 = $(foreach action,$(ACTIONS), \
 			$(foreach product,$(PRODUCTS), \
 				$(action)~$(product)))
 
-all:		build
+all:		build install
 
 #
 # Composite targets for handling actions.
