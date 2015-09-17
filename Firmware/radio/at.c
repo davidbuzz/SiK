@@ -595,8 +595,11 @@ at_plus(void)
     if (at_num == 1) {
       radio_set_diversity(DIVERSITY_ANT1);
     }
-    else {
+    else if (at_num == 2) {
       radio_set_diversity(DIVERSITY_ANT2);
+    }
+    else {
+      radio_set_diversity(DIVERSITY_ENABLED);
     }
     at_ok();
     return;
