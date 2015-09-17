@@ -65,6 +65,7 @@ enum ParamID {
 #ifdef INCLUDE_AES
   PARAM_ENCRYPTION,     // no Enycryption (0), 128 or 256 bit key
 #endif
+	PARAM_DIVERSITY,       // 0 => no diversity, 1 => "auto antenna select for tx/rx", 2&3 => "manual" where one ant is TX only, and the other is RX only.
 	PARAM_MAX				// must be last
 };
 

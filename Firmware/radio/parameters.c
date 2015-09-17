@@ -73,6 +73,7 @@ __code const struct parameter_info {
 #ifdef INCLUDE_AES
   {"ENCRYPTION_LEVEL", 0}, // no Enycryption (0), 128 or 256 bit key
 #endif
+  {"DIVERSITY", 0},
 };
 
 /// In-RAM parameter store.
@@ -166,6 +167,16 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 		if (val > 131)
 			return false;
 		break;
+		
+	case PARAM_DIVERSITY:
+        #ifdef RFD900_DIVERSITY
+         		if (val > 3)
+        			return false;
+        #else
+         		if (val != 0)
+        			return false;      
+        #endif	
+	    break;	
 
 	default:
 		// no sanity check for this value
@@ -218,6 +229,11 @@ param_set(__data enum ParamID param, __pdata param_t value)
 		feature_rtscts = value?true:false;
 		value = feature_rtscts?1:0;
 		break;
+
+	case PARAM_DIVERSITY:
+		feature_diversity = (uint8_t) value;
+		value = feature_diversity;
+	    break;	
 
 	default:
 		break;

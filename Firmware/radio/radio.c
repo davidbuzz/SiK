@@ -40,6 +40,8 @@ __xdata uint8_t radio_buffer[MAX_PACKET_LENGTH];
 __pdata uint8_t receive_packet_length;
 __pdata uint8_t partial_packet_length;
 __pdata uint8_t last_rssi;
+__pdata uint8_t last_rssi1;
+__pdata uint8_t last_rssi2;
 __pdata uint8_t netid[2];
 
 static volatile __bit packet_received;
@@ -418,6 +420,21 @@ radio_transmit_simple(__data uint8_t length, __xdata uint8_t * __pdata buf, __pd
 #ifdef DEBUG_PINS_RADIO_TX_RX
       P1 &= ~0x01;
 #endif // DEBUG_PINS_RADIO_TX_RX
+
+            // transmit completed ok..., so prepare for next RX: 
+            
+           		// ensure we next transmit on the weakest RX link, and continue to recieve on the strongest RX link
+           		if (feature_diversity == DIVERSITY_TX1_RX2 ) { 
+           		  if (last_rssi1 > last_rssi2 ) {  // note the greater-than
+           		      radio_set_diversity(DIVERSITY_ANT1); // we will RX on 1, as 1 has best signal
+           		  }
+           		} 
+           		if (feature_diversity == DIVERSITY_TX2_RX1 ) { 
+           		  if (last_rssi2 > last_rssi1 ) { 
+           		     radio_set_diversity(DIVERSITY_ANT2); // we will RX on 2, as 2 has best signal
+           		  }
+           		} 
+           		
 			return true;
 		}
 
@@ -758,6 +775,7 @@ radio_configure(__pdata uint8_t air_rate)
 #elif ENABLE_RFD900_SWITCH
 	register_write(EZRADIOPRO_GPIO0_CONFIGURATION, 0x15);	// RX data (output)
 	register_write(EZRADIOPRO_GPIO1_CONFIGURATION, 0x12);	// RX data (output)
+	
 #if RFD900_DIVERSITY
 	radio_set_diversity(DIVERSITY_ENABLED);
 #else
@@ -1163,12 +1181,20 @@ radio_temperature(void)
 	return temp_local;
 }
 
-/// Turn off radio diversity
+/// Turn on/off radio diversity
 ///
 void
 radio_set_diversity(enum DIVERSITY_Enum state)
 {
   switch (state) {
+    
+    case DIVERSITY_TX1_RX2:              // force all transmits to be on antenna1, and all recieves to be on antenna2  
+       //TODO ?
+      break;
+    case DIVERSITY_TX2_RX1:               // opposite of the previous one.
+      //TODO ?
+      break;
+
     case DIVERSITY_ENABLED:
       register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x18);
       // see table 23.8, page 279
@@ -1230,6 +1256,12 @@ INTERRUPT(Receiver_ISR, INTERRUPT_INT0)
 
 		// read the RSSI register for logging
 		last_rssi = register_read(EZRADIOPRO_RECEIVED_SIGNAL_STRENGTH_INDICATOR);
+		
+		// read separate RSSI values for each antenna:
+		last_rssi1 = register_read(EZRADIOPRO_ANTENNA_DIVERSITY_REGISTER_1);
+		last_rssi2 = register_read(EZRADIOPRO_ANTENNA_DIVERSITY_REGISTER_2);
+		
+		
 	}
 
 	if (feature_golay == false && (status & EZRADIOPRO_ICRCERROR)) {
@@ -1253,6 +1285,18 @@ INTERRUPT(Receiver_ISR, INTERRUPT_INT0)
 		// disable interrupts until the tdm code has grabbed the packet
 		register_write(EZRADIOPRO_INTERRUPT_ENABLE_1, 0);
 		register_write(EZRADIOPRO_INTERRUPT_ENABLE_2, 0);
+		
+		// ensure we next transmit on the weakest RX link, and continue to recieve on the strongest RX link
+		if (feature_diversity == DIVERSITY_TX1_RX2 ) { 
+		  if (last_rssi1 < last_rssi2 ) {  // note the less-than
+		      radio_set_diversity(DIVERSITY_ANT1);  // we will TX on 1, as 2 has best RX signal
+		  }
+		} 
+		if (feature_diversity == DIVERSITY_TX2_RX1 ) { 
+		  if (last_rssi2 < last_rssi1 ) { 
+		     radio_set_diversity(DIVERSITY_ANT2); // we will TX on 2, as 1 has best RX signal
+		  }
+		} 
 
 		// go into tune mode
 		register_write(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_1, EZRADIOPRO_PLLON);

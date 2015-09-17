@@ -100,6 +100,7 @@ bool feature_golay;
 bool feature_opportunistic_resend;
 uint8_t feature_mavlink_framing;
 bool feature_rtscts;
+uint8_t feature_diversity;
 
 void
 main(void)
@@ -124,6 +125,7 @@ main(void)
 	feature_opportunistic_resend = param_get(PARAM_OPPRESEND)?true:false;
 	feature_golay = param_get(PARAM_ECC)?true:false;
 	feature_rtscts = param_get(PARAM_RTSCTS)?true:false;
+	feature_diversity = param_get(PARAM_DIVERSITY);
 
 	// Do hardware initialisation.
 	hardware_init();

@@ -72,6 +72,8 @@ extern bool feature_golay;
 extern bool feature_opportunistic_resend;
 extern uint8_t feature_mavlink_framing;
 extern bool feature_rtscts;
+extern uint8_t feature_diversity;
+
 
 /// System clock frequency
 ///
@@ -302,10 +304,12 @@ extern int16_t radio_temperature(void);
 //-----------------------------------------------------------------------------
 enum DIVERSITY_Enum
 {
-  DIVERSITY_ENABLED = 0,          // 0x00
-  DIVERSITY_DISABLED,             // 0x01
-  DIVERSITY_ANT1,                 // 0x02
-  DIVERSITY_ANT2                  // 0x03
+  DIVERSITY_ENABLED = 0,          // 0x00  = autoselect antenna for tx/rx on the fly
+  DIVERSITY_DISABLED,             // 0x01  = fixed single-antenna systems
+  DIVERSITY_ANT1,                 // 0x02  = make a dual-antenna system act like it's only got "antenna 1", locking tx and rx  there.
+  DIVERSITY_ANT2,                 // 0x03  = opposite of the previous one - ie only use "antenna 2"
+  DIVERSITY_TX1_RX2,              // force all transmits to be on antenna1, and all recieves to be on antenna2  
+  DIVERSITY_TX2_RX1               // opposite of the previous one.
 };
 
 extern void radio_set_diversity(enum DIVERSITY_Enum state);

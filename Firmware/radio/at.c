@@ -598,7 +598,13 @@ at_plus(void)
     else if (at_num == 2) {
       radio_set_diversity(DIVERSITY_ANT2);
     }
-    else {
+    else if (at_num == 3) {
+      feature_diversity == DIVERSITY_TX1_RX2;
+    }
+    else if (at_num == 4) {
+      feature_diversity == DIVERSITY_TX2_RX1;
+    }
+    else if (at_num == 0) {
       radio_set_diversity(DIVERSITY_ENABLED);
     }
     at_ok();
