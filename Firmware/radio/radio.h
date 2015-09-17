@@ -69,8 +69,9 @@ extern __pdata uint8_t pdata_canary;
 /// optional features
 extern bool feature_golay;
 extern bool feature_opportunistic_resend;
-extern uint8_t feature_mavlink_framing;
 extern bool feature_rtscts;
+extern uint8_t feature_mavlink_framing;
+extern uint8_t feature_diversity;
 
 /// System clock frequency
 ///
@@ -287,6 +288,6 @@ extern int16_t radio_temperature(void);
 #define MAX_PA_TEMPERATURE 100
 #endif
 
-extern void radio_set_diversity(bool enable);
+extern void radio_set_diversity(uint8_t type);
 
 #endif // _RADIO_H_

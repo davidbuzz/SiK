@@ -720,6 +720,7 @@ radio_configure(__pdata uint8_t air_rate)
 
 	clear_status_registers();
 
+// rf switcher choices
 #ifdef ENABLE_RF_SWITCH
 	//set GPIO0 to GND
 	register_write(EZRADIOPRO_GPIO0_CONFIGURATION, 0x14);	// RX data (output)
@@ -734,16 +735,18 @@ radio_configure(__pdata uint8_t air_rate)
 #elif ENABLE_RFD900_SWITCH
 	register_write(EZRADIOPRO_GPIO0_CONFIGURATION, 0x15);	// RX data (output)
 	register_write(EZRADIOPRO_GPIO1_CONFIGURATION, 0x12);	// RX data (output)
-#if RFD900_DIVERSITY
-	radio_set_diversity(true);
-#else
-	radio_set_diversity(false);
-#endif
 #else
 	//set GPIOx to GND
 	register_write(EZRADIOPRO_GPIO0_CONFIGURATION, 0x14);	// RX data (output)
 	register_write(EZRADIOPRO_GPIO1_CONFIGURATION, 0x14);	// RX data (output)
 	register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x14);	// RX data (output)
+#endif
+
+// rf diversity choices 
+#ifdef RFD900_DIVERSITY
+    	radio_set_diversity(RFD900_DIVERSITY); // 1,2,3 etc are valid diversity types, see radio.c
+#else
+    	radio_set_diversity(0);
 #endif
 
 	// set capacitance
@@ -1126,23 +1129,52 @@ radio_temperature(void)
 	return temp_local;
 }
 
-/// Turn off radio diversity
-///
+/// Turn on/off radio diversity, this is only supported on radios with multiple antennas like the rfd900 range
+/// 
+/// we support four diversity types now:
+//  0 means "none"
+//  1 means "automatic antenna selection for tx/rx"
+//  2 means "manual selection" where the first antenna is TX only, and the second is RX only.
+//  3 means the same as 2 ( ie manual selection) , but with the TX and RX antennas just physically reversed.
 void
-radio_set_diversity(bool enable)
+radio_set_diversity(uint8_t type)
 {
-	if (enable)
+        // TIPS: 
+		// see table 23.8 "Table 23.8. Antenna Diversity Control" maybe around page 279 in the si1000.pdf
+		// the left ( or top) three BITS of the CONTROL_2 register affect antenna diversity ( and are called "antdiv[2:0]" in the si1000.pdf )
+		// bits 100  = Antenna Diversity Algorithm   ( 0x80 ) 
+		// bits 000  = GPIO_Ant1=0, and  GPIO_Ant2=1  ( 0x00 )
+		// bits 001  = GPIO_Ant1=1, and  GPIO_Ant2=0   ( 0x20 )
+	
+	// bits 001 manual control
+	if (type == 3) 
 	{
-		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x18);
-		// see table 23.8, page 279
+	   		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x18); 
+	   		register_write(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2, (register_read(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2) & ~EZRADIOPRO_ANTDIV_MASK) | 0x20);
+	}
+	// bits 000 flipped manual control
+    if (type == 2)
+	{
+	   		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x18);  // ie the 5 config bits are: b11000
+	   		register_write(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2, (register_read(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2) & ~EZRADIOPRO_ANTDIV_MASK) | 0x00);
+	}
+	// bits 100 auto control
+	if (type == 1)
+	{
+		// 0x18 = 0001 1000 =  or gpio2[4:0] config registers to 11000, which 
+		// means "GPIO setting 11000, Antenna 2 Switch used for antenna diversity"
+		// see also AN440.pdf for si1000 , section "Register 0Dh. GPIO Configuration 2", and also "Register 08h"
+		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x18); 
+		// so we read the existing settings, ignoring the top three bits ( with EZRADIOPRO_ANTDIV_MASK ), then add-in the new top-three bits as 0x80. 
 		register_write(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2, (register_read(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2) & ~EZRADIOPRO_ANTDIV_MASK) | 0x80);
 	}
-	else
+	// no diversity, just hard-coded for hm-trp and other simple boards
+	if (type == 0 ) 
 	{
 		// see table 23.8, page 279
 		register_write(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2, (register_read(EZRADIOPRO_OPERATING_AND_FUNCTION_CONTROL_2) & ~EZRADIOPRO_ANTDIV_MASK));
 
-		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x0A);	// GPIO2 (ANT1) output set high fixed
+		register_write(EZRADIOPRO_GPIO2_CONFIGURATION, 0x0A);	// GPIO2 (ANT1) output set high fixed, ie the 5 config bits are: b01010
 		register_write(EZRADIOPRO_IO_PORT_CONFIGURATION, 0x04);	// GPIO2 output set high (fixed on ant 1)
 	}
 }

@@ -453,7 +453,7 @@ at_plus(void)
 		idx = 5;
 		at_parse_number();
 		PCA0CPH3 = at_num & 0xFF;
-		radio_set_diversity(false);
+		radio_set_diversity(0);
 		at_ok();
 		return;
 	case 'C': // AT+Cx=y write calibration value

@@ -62,6 +62,7 @@ enum ParamID {
 	PARAM_MANCHESTER,		// enable manchester encoding
 	PARAM_RTSCTS,			// enable hardware flow control
 	PARAM_MAX_WINDOW,		// The maximum window size allowed
+	PARAM_DIVERSITY,       // 0 => no diversity, 1 => "auto antenna select for tx/rx", 2&3 => "manual" where one ant is TX only, and the other is RX only.
 	PARAM_MAX			// must be last
 };
 

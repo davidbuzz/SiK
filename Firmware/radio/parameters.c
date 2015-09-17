@@ -65,7 +65,8 @@ __code const struct parameter_info {
 	{"LBT_RSSI",		0},
 	{"MANCHESTER",		0},
 	{"RTSCTS",		0},
-	{"MAX_WINDOW",		131}
+	{"MAX_WINDOW",		131},
+	{"PARAM_DIVERSITY",    0}
 };
 
 /// In-RAM parameter store.
@@ -126,8 +127,18 @@ param_check(__pdata enum ParamID id, __data uint32_t val)
 		// bit trailer for window remaining
 		if (val > 131)
 			return false;
-		break;
-				
+		break;	
+		
+	case PARAM_DIVERSITY:
+        #ifdef RFD900_DIVERSITY
+         		if (val > 3)
+        			return false;
+        #else
+         		if (val != 0)
+        			return false;      
+        #endif	
+	    break;	
+
 	default:
 		// no sanity check for this value
 		break;
@@ -179,6 +190,15 @@ param_set(__data enum ParamID param, __pdata param_t value)
 		feature_rtscts = value?true:false;
 		value = feature_rtscts?1:0;
 		break;
+
+	case PARAM_DIVERSITY:
+        #ifdef RFD900_DIVERSITY
+		feature_diversity = constrain(value, 0, 3);
+		#else
+		feature_diversity = 0;
+		#endif
+		value = feature_diversity;
+	    break;	
 
 	default:
 		break;
